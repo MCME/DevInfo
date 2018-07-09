@@ -18,10 +18,12 @@ public class DevInfo extends JavaPlugin {
 
     static ChatColor errorColor = ChatColor.RED;
 
+    static HttpServer httpServer;
+
     public void onEnable() {
         this.getCommand("devinfo").setExecutor(new Commands());
         try {
-            HttpServer httpServer = new HttpServer();
+            httpServer = new HttpServer();
             httpServer.start();
         } catch (IOException ex) {
             System.out.println("IO except");
@@ -40,9 +42,8 @@ public class DevInfo extends JavaPlugin {
 
     static class Commands implements CommandExecutor {
 
-        private void registerWebUser(String user, String password) {
-            System.out.println(user);
-            System.out.println(password);
+        private void registerWebUser(Player user, String password) {
+            httpServer.registeredUsers.put(password, user);
         }
 
         private void sendAllPluginVersions(Player player) {
@@ -71,7 +72,7 @@ public class DevInfo extends JavaPlugin {
             if(args.length >= 2 && player.hasPermission(Permissions.web) &&
                     args[0].equalsIgnoreCase("register")) {
                 player.sendMessage("Registered account for " + player.getName());
-                registerWebUser(player.getName(), args[1]);
+                registerWebUser(player, args[1]);
                 return true;
             }
 
