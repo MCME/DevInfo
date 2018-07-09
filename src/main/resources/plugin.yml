@@ -1,0 +1,25 @@
+name: ${project.artifactId}
+main: ${project.groupId}.devinfo.DevInfo
+version: ${project.version}
+description: A plugin to aid development on MCME
+commands:
+  devinfo:
+    description: Root command for getting development info
+    usage: |
+           /devinfo register <password>
+           /devinfo version [plugin name]
+           /devinfo <plugin> [level]
+           /devinfo console <plugin> [level]
+permissions:
+  devinfo.web:
+    default: op
+    description: permissions to register and use the web access dev console.
+  devinfo.plugins:
+    default: op
+    description: permissions to use the version command.
+  devinfo.debug:
+    default: op
+    description: permissions to register for debug messages.
+  devinfo.debug.console:
+    default: op
+    description: permissions to send debug messages to console.
