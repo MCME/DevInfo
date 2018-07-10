@@ -116,10 +116,10 @@ public class HttpServer {
                 String[] args = exchange.getRequestURI().getPath().split("/");
                 Player user = registeredUsers.get(args[1]);
 
-//                if(user == null || !user.isOnline()) {
-//                    send403(exchange);
-//                    return;
-//                }
+                if(user == null || !user.isOnline()) {
+                    send403(exchange);
+                    return;
+                }
 
                 String[] argz = Arrays.copyOfRange(args, 3, args.length);
 
