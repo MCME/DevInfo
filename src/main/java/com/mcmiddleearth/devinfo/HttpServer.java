@@ -5,11 +5,11 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.bukkit.entity.Player;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 
 public class HttpServer {
@@ -74,9 +74,10 @@ public class HttpServer {
         writeLines(exchange, 75);
     }
 
-    private void handleConfigRequest(HttpExchange exchange, String[] args) throws IOException {
+    private void handleConfigGetRequest(HttpExchange exchange, String[] args) throws IOException {
         StringBuilder sb = new StringBuilder();
         File target = new File("plugins/" + String.join("/", args));
+
         if(target.isFile()) {
             Scanner s = new Scanner(target);
             while(s.hasNextLine()) {
@@ -95,8 +96,16 @@ public class HttpServer {
         out.close();
     }
 
-    private void handlePluginRequest(HttpExchange exchange, String[] args) throws IOException {
-
+    private void handleConfigSetRequest(HttpExchange exchange, String[] args) throws IOException {
+        String[] argz = new Scanner(exchange.getRequestBody()).useDelimiter("\\A").next().split("\n");
+        ReadableByteChannel rbc = Channels.newChannel(new URL(argz[0]).openStream());
+        FileOutputStream fos = new FileOutputStream("plugins/" + argz[1]);
+        fos.getChannel().transferFrom(rbc, 0, java.lang.Long.MAX_VALUE);
+        String conf = "Loaded and saved";
+        OutputStream out = exchange.getResponseBody();
+        exchange.sendResponseHeaders(200, conf.getBytes().length);
+        out.write(conf.getBytes());
+        out.close();
     }
 
     public void start() throws IOException {
@@ -107,30 +116,27 @@ public class HttpServer {
                 String[] args = exchange.getRequestURI().getPath().split("/");
                 Player user = registeredUsers.get(args[1]);
 
-                if(user == null || !user.isOnline()) {
-                    send403(exchange);
-                    return;
-                }
+//                if(user == null || !user.isOnline()) {
+//                    send403(exchange);
+//                    return;
+//                }
 
-                String[] argz = new String[args.length - 3];
-                if(argz.length != 0){
-                    System.arraycopy(args, 2, argz, 0, argz.length - 3);
-                }
+                String[] argz = Arrays.copyOfRange(args, 3, args.length);
 
                 if(args[2].equalsIgnoreCase("logs")) {
                     handleLogRequest(exchange, argz);
                     return;
                 }
-                if(args[2].equalsIgnoreCase("config")) {
-                    handleConfigRequest(exchange, argz);
+                if(args[2].equalsIgnoreCase("config") && exchange.getRequestMethod().equalsIgnoreCase("get")) {
+                    handleConfigGetRequest(exchange, argz);
                 }
-//                if(args[2].equalsIgnoreCase("plugin")) {
-//                    handlePluginRequest(exchange, argz);
-//                }
+                if(args[2].equalsIgnoreCase("config") && exchange.getRequestMethod().equalsIgnoreCase("post")) {
+                    handleConfigSetRequest(exchange, argz);
+                }
                 send404(exchange);
             }
         });
-//        server.setExecutor(null); // creates a default executor
+        server.setExecutor(null); // creates a default executor
         server.start();
     }
 }
