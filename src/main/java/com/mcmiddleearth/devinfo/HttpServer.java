@@ -1,5 +1,6 @@
 package com.mcmiddleearth.devinfo;
 
+import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.bukkit.entity.Player;
@@ -9,10 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Scanner;
+import java.util.*;
 
 public class HttpServer {
 
@@ -34,6 +32,14 @@ public class HttpServer {
         os.close();
     }
 
+    private void send404(HttpExchange exchange) throws IOException {
+        String response = "Requested function not found";
+        exchange.sendResponseHeaders(404, response.getBytes().length);
+        OutputStream os = exchange.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
+    }
+
     private void writeLines(HttpExchange exchange, int lineCount) throws IOException {
         Scanner s = new Scanner(new File("logs/latest.log"));
         Deque<String> lines = new LinkedList<>();
@@ -43,15 +49,54 @@ public class HttpServer {
                 lines.removeLast();
             }
         }
-        int length = 0;
-        OutputStream out = exchange.getResponseBody();
+
+        StringBuilder sb = new StringBuilder();
         while(lines.size() > 0){
-            String ln = lines.removeFirst();
-            length += ln.getBytes().length;
-            out.write(ln.getBytes());
+            sb.append(lines.removeFirst());
+            sb.append("\n");
         }
-        exchange.sendResponseHeaders(200, length);
+        OutputStream out = exchange.getResponseBody();
+        exchange.sendResponseHeaders(200, sb.toString().getBytes().length);
+        out.write(sb.toString().getBytes());
         out.close();
+    }
+
+    private void handleLogRequest(HttpExchange exchange, String[] args) throws IOException {
+        if(args.length == 1) {
+            try {
+                int lines = Integer.parseInt(args[0]);
+                writeLines(exchange, lines);
+            } catch(NumberFormatException ex) {
+                send500(exchange);
+                return;
+            }
+        }
+        writeLines(exchange, 75);
+    }
+
+    private void handleConfigRequest(HttpExchange exchange, String[] args) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        File target = new File("plugins/" + String.join("/", args));
+        if(target.isFile()) {
+            Scanner s = new Scanner(target);
+            while(s.hasNextLine()) {
+                sb.append(s.nextLine());
+                sb.append("\n");
+            }
+        } else {
+            Arrays.stream(Objects.requireNonNull(target.listFiles())).map(File::getName).forEach(e -> {
+                sb.append(e);
+                sb.append("\n");
+            });
+        }
+        OutputStream out = exchange.getResponseBody();
+        exchange.sendResponseHeaders(200, sb.toString().getBytes().length);
+        out.write(sb.toString().getBytes());
+        out.close();
+    }
+
+    private void handlePluginRequest(HttpExchange exchange, String[] args) throws IOException {
+
     }
 
     public void start() throws IOException {
@@ -60,26 +105,32 @@ public class HttpServer {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
                 String[] args = exchange.getRequestURI().getPath().split("/");
-                Player user = registeredUsers.get(args[0]);
+                Player user = registeredUsers.get(args[1]);
 
                 if(user == null || !user.isOnline()) {
                     send403(exchange);
                     return;
                 }
 
-                if(args.length == 2) {
-                    try {
-                        int lines = Integer.parseInt(args[1]);
-                        writeLines(exchange, lines);
-                    } catch(NumberFormatException ex) {
-                        send500(exchange);
-                        return;
-                    }
+                String[] argz = new String[args.length - 3];
+                if(argz.length != 0){
+                    System.arraycopy(args, 2, argz, 0, argz.length - 3);
                 }
-                writeLines(exchange, 75);
+
+                if(args[2].equalsIgnoreCase("logs")) {
+                    handleLogRequest(exchange, argz);
+                    return;
+                }
+                if(args[2].equalsIgnoreCase("config")) {
+                    handleConfigRequest(exchange, argz);
+                }
+//                if(args[2].equalsIgnoreCase("plugin")) {
+//                    handlePluginRequest(exchange, argz);
+//                }
+                send404(exchange);
             }
         });
-        server.setExecutor(null); // creates a default executor
+//        server.setExecutor(null); // creates a default executor
         server.start();
     }
 }
