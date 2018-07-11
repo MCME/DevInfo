@@ -1,6 +1,5 @@
 package com.mcmiddleearth.devinfo;
 
-import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.bukkit.entity.Player;
@@ -14,7 +13,15 @@ import java.util.*;
 
 public class HttpServer {
 
+    final HashSet<String> deployPasswords = new HashSet<>();
+
     final HashMap<String, Player> registeredUsers = new HashMap<>();
+
+    final int port;
+
+    public HttpServer(int port) {
+        this.port = port;
+    }
 
     private void send403(HttpExchange exchange) throws IOException {
         String response = "Invalid login";
@@ -109,14 +116,14 @@ public class HttpServer {
     }
 
     public void start() throws IOException {
-        com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(8000), 0);
+        com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(this.port), 0);
         server.createContext("/", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
                 String[] args = exchange.getRequestURI().getPath().split("/");
                 Player user = registeredUsers.get(args[1]);
 
-                if(user == null || !user.isOnline()) {
+                if(!deployPasswords.contains(args[1]) && (user == null || !user.isOnline())) {
                     send403(exchange);
                     return;
                 }

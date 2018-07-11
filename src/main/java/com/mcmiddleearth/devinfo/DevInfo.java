@@ -21,10 +21,12 @@ public class DevInfo extends JavaPlugin {
     static HttpServer httpServer;
 
     public void onEnable() {
+        this.saveDefaultConfig();
         this.getCommand("devinfo").setExecutor(new Commands());
         try {
-            httpServer = new HttpServer();
+            httpServer = new HttpServer(this.getConfig().getInt("infoPort"));
             httpServer.start();
+            httpServer.deployPasswords.add(this.getConfig().getString("deploy"));
         } catch (IOException ex) {
             System.out.println("IO except");
         }
