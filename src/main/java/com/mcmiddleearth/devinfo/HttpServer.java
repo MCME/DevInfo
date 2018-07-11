@@ -41,7 +41,7 @@ public class HttpServer {
     }
 
     private void send404(HttpExchange exchange) throws IOException {
-        String response = "Requested function not found";
+        String response = "Requested function not found. This could be in error.";
         exchange.sendResponseHeaders(404, response.getBytes().length);
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes());
