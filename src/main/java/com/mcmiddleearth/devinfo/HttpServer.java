@@ -123,6 +123,15 @@ public class HttpServer {
         out.close();
     }
 
+    private void handleRebootRequest(HttpExchange exchange, String[] args) throws IOException {
+        String conf = "Sending reboot signal";
+        OutputStream out = exchange.getResponseBody();
+        exchange.sendResponseHeaders(200, conf.getBytes().length);
+        out.write(conf.getBytes());
+        out.close();
+        Bukkit.shutdown();
+    }
+
     public void start() throws IOException {
         com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(this.port), 0);
         System.out.println("Info server started on port " + this.port);
@@ -148,6 +157,9 @@ public class HttpServer {
                 }
                 if(args[2].equalsIgnoreCase("config") && exchange.getRequestMethod().equalsIgnoreCase("post")) {
                     handleConfigSetRequest(exchange, argz);
+                }
+                if(args[2].equalsIgnoreCase("reboot")) {
+                    handleRebootRequest(exchange, argz);
                 }
                 send404(exchange);
             }
