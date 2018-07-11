@@ -134,7 +134,7 @@ public class HttpServer {
 
     public void start() throws IOException {
         com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(this.port), 0);
-        System.out.println("Info server started on port " + this.port);
+        System.out.println("Info server started on port: " + this.port);
         server.createContext("/", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
