@@ -30,6 +30,21 @@ public class DevInfo extends JavaPlugin {
         } catch (IOException ex) {
             System.out.println("IO except");
         }
+        new Thread(new Runnable() {
+            public void run() {
+                runCompression();
+            }
+        }).start();
+    }
+
+    private void runCompression() {
+        try {
+            System.out.println("Running compression async");
+            Process compress = Runtime.getRuntime().exec("tar cfvz world.tar.gz world");
+            System.out.println("Compression complete");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     static class Permissions {
