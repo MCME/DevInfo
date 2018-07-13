@@ -40,7 +40,7 @@ public class DevInfo extends JavaPlugin {
     private void runCompression() {
         try {
             System.out.println("Running compression async");
-            Process compress = Runtime.getRuntime().exec("tar cfvz world.tar.gz world");
+            Process compress = Runtime.getRuntime().exec("tar cfvz plugins/world.tar.gz world");
             System.out.println("Compression complete");
         } catch (IOException e) {
             e.printStackTrace();
