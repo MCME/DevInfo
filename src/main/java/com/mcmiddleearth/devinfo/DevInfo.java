@@ -30,22 +30,6 @@ public class DevInfo extends JavaPlugin {
         } catch (IOException ex) {
             System.out.println("IO except");
         }
-        new Thread(new Runnable() {
-            public void run() {
-                runCompression();
-            }
-        }).start();
-    }
-
-    private void runCompression() {
-        try {
-            System.out.println("Running compression async");
-            Process compress = Runtime.getRuntime().exec("tar cfvz plugins/world.tar.gz world");
-            compress.waitFor();
-            System.out.println("Compression complete");
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     static class Permissions {

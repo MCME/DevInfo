@@ -83,25 +83,38 @@ public class HttpServer {
     }
 
     private void handleConfigGetRequest(HttpExchange exchange, String[] args) throws IOException {
-        StringBuilder sb = new StringBuilder();
         File target = new File("plugins/" + String.join("/", args));
 
         if(target.isFile()) {
-            Scanner s = new Scanner(target);
-            while(s.hasNextLine()) {
-                sb.append(s.nextLine());
-                sb.append("\n");
+            byte[] buffer = new byte[1024];
+            FileInputStream fis = new FileInputStream(target);
+            OutputStream out = exchange.getResponseBody();
+            exchange.sendResponseHeaders(200, (int) target.length());
+            try {
+                int byteRead = 0;
+                while ((byteRead = fis.read(buffer)) != -1) {
+                    out.write(buffer, 0, byteRead);
+
+                }
+                out.flush();
+            } catch (Exception excp) {
+                excp.printStackTrace();
+            } finally {
+                out.close();
+                fis.close();
             }
         } else {
+            StringBuilder sb = new StringBuilder();
             Arrays.stream(Objects.requireNonNull(target.listFiles())).map(File::getName).forEach(e -> {
                 sb.append(e);
                 sb.append("\n");
             });
+            OutputStream out = exchange.getResponseBody();
+            exchange.sendResponseHeaders(200, sb.toString().getBytes().length);
+            out.write(sb.toString().getBytes());
+            out.close();
         }
-        OutputStream out = exchange.getResponseBody();
-        exchange.sendResponseHeaders(200, sb.toString().getBytes().length);
-        out.write(sb.toString().getBytes());
-        out.close();
+
     }
 
     private void handleConfigSetRequest(HttpExchange exchange, String[] args) throws IOException {
@@ -132,6 +145,40 @@ public class HttpServer {
         Bukkit.shutdown();
     }
 
+    private void handleRenderGetRequest(HttpExchange exchange, String[] args) throws IOException {
+        File target = new File("world/" + String.join("/", args));
+
+        if(target.isFile()) {
+            byte[] buffer = new byte[1024];
+            FileInputStream fis = new FileInputStream(target);
+            OutputStream out = exchange.getResponseBody();
+            exchange.sendResponseHeaders(200, (int) target.length());
+            try {
+                int byteRead = 0;
+                while ((byteRead = fis.read(buffer)) != -1) {
+                    out.write(buffer, 0, byteRead);
+
+                }
+                out.flush();
+            } catch (Exception excp) {
+                excp.printStackTrace();
+            } finally {
+                out.close();
+                fis.close();
+            }
+        } else {
+            StringBuilder sb = new StringBuilder();
+            Arrays.stream(Objects.requireNonNull(target.listFiles())).map(File::getName).forEach(e -> {
+                sb.append(e);
+                sb.append("\n");
+            });
+            OutputStream out = exchange.getResponseBody();
+            exchange.sendResponseHeaders(200, sb.toString().getBytes().length);
+            out.write(sb.toString().getBytes());
+            out.close();
+        }
+    }
+
     public void start() throws IOException {
         com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(this.port), 0);
         System.out.println("Info server started on port: " + this.port);
@@ -157,6 +204,9 @@ public class HttpServer {
                 }
                 if(args[2].equalsIgnoreCase("config") && exchange.getRequestMethod().equalsIgnoreCase("post")) {
                     handleConfigSetRequest(exchange, argz);
+                }
+                if(args[2].equalsIgnoreCase("render")) {
+                    handleRenderGetRequest(exchange, argz);
                 }
                 if(args[2].equalsIgnoreCase("reboot")) {
                     handleRebootRequest(exchange, argz);
