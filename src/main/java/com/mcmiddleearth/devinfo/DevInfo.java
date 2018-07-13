@@ -41,8 +41,9 @@ public class DevInfo extends JavaPlugin {
         try {
             System.out.println("Running compression async");
             Process compress = Runtime.getRuntime().exec("tar cfvz plugins/world.tar.gz world");
+            compress.waitFor();
             System.out.println("Compression complete");
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
