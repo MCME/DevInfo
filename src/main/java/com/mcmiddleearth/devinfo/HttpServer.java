@@ -2,6 +2,7 @@ package com.mcmiddleearth.devinfo;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.io.*;
@@ -40,7 +41,7 @@ public class HttpServer {
     }
 
     private void send404(HttpExchange exchange) throws IOException {
-        String response = "Requested function not found";
+        String response = "Requested function not found. This could be in error.";
         exchange.sendResponseHeaders(404, response.getBytes().length);
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes());
@@ -105,9 +106,16 @@ public class HttpServer {
 
     private void handleConfigSetRequest(HttpExchange exchange, String[] args) throws IOException {
         String[] argz = new Scanner(exchange.getRequestBody()).useDelimiter("\\A").next().split("\n");
-        ReadableByteChannel rbc = Channels.newChannel(new URL(argz[0]).openStream());
-        FileOutputStream fos = new FileOutputStream("plugins/" + argz[1]);
-        fos.getChannel().transferFrom(rbc, 0, java.lang.Long.MAX_VALUE);
+        if(argz[0].equalsIgnoreCase("null")) {
+            File f = new File("plugins/" + argz[1]);
+            if(f.delete()){
+                return;
+            }
+        } else {
+            ReadableByteChannel rbc = Channels.newChannel(new URL(argz[0]).openStream());
+            FileOutputStream fos = new FileOutputStream("plugins/" + argz[1]);
+            fos.getChannel().transferFrom(rbc, 0, java.lang.Long.MAX_VALUE);
+        }
         String conf = "Loaded and saved";
         OutputStream out = exchange.getResponseBody();
         exchange.sendResponseHeaders(200, conf.getBytes().length);
@@ -115,8 +123,18 @@ public class HttpServer {
         out.close();
     }
 
+    private void handleRebootRequest(HttpExchange exchange, String[] args) throws IOException {
+        String conf = "Sending reboot signal";
+        OutputStream out = exchange.getResponseBody();
+        exchange.sendResponseHeaders(200, conf.getBytes().length);
+        out.write(conf.getBytes());
+        out.close();
+        Bukkit.shutdown();
+    }
+
     public void start() throws IOException {
         com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new InetSocketAddress(this.port), 0);
+        System.out.println("Info server started on port: " + this.port);
         server.createContext("/", new HttpHandler() {
             @Override
             public void handle(HttpExchange exchange) throws IOException {
@@ -139,6 +157,9 @@ public class HttpServer {
                 }
                 if(args[2].equalsIgnoreCase("config") && exchange.getRequestMethod().equalsIgnoreCase("post")) {
                     handleConfigSetRequest(exchange, argz);
+                }
+                if(args[2].equalsIgnoreCase("reboot")) {
+                    handleRebootRequest(exchange, argz);
                 }
                 send404(exchange);
             }
