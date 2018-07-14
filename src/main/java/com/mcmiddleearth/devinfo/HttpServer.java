@@ -117,25 +117,6 @@ public class HttpServer {
 
     }
 
-    private void handleConfigSetRequest(HttpExchange exchange, String[] args) throws IOException {
-        String[] argz = new Scanner(exchange.getRequestBody()).useDelimiter("\\A").next().split("\n");
-        if(argz[0].equalsIgnoreCase("null")) {
-            File f = new File("plugins/" + argz[1]);
-            if(f.delete()){
-                return;
-            }
-        } else {
-            ReadableByteChannel rbc = Channels.newChannel(new URL(argz[0]).openStream());
-            FileOutputStream fos = new FileOutputStream("plugins/" + argz[1]);
-            fos.getChannel().transferFrom(rbc, 0, java.lang.Long.MAX_VALUE);
-        }
-        String conf = "Loaded and saved";
-        OutputStream out = exchange.getResponseBody();
-        exchange.sendResponseHeaders(200, conf.getBytes().length);
-        out.write(conf.getBytes());
-        out.close();
-    }
-
     private void handleRebootRequest(HttpExchange exchange, String[] args) throws IOException {
         String conf = "Sending reboot signal";
         OutputStream out = exchange.getResponseBody();
@@ -143,40 +124,6 @@ public class HttpServer {
         out.write(conf.getBytes());
         out.close();
         Bukkit.shutdown();
-    }
-
-    private void handleRenderGetRequest(HttpExchange exchange, String[] args) throws IOException {
-        File target = new File("world/" + String.join("/", args));
-
-        if(target.isFile()) {
-            byte[] buffer = new byte[1024];
-            FileInputStream fis = new FileInputStream(target);
-            OutputStream out = exchange.getResponseBody();
-            exchange.sendResponseHeaders(200, (int) target.length());
-            try {
-                int byteRead = 0;
-                while ((byteRead = fis.read(buffer)) != -1) {
-                    out.write(buffer, 0, byteRead);
-
-                }
-                out.flush();
-            } catch (Exception excp) {
-                excp.printStackTrace();
-            } finally {
-                out.close();
-                fis.close();
-            }
-        } else {
-            StringBuilder sb = new StringBuilder();
-            Arrays.stream(Objects.requireNonNull(target.listFiles())).map(File::getName).forEach(e -> {
-                sb.append(e);
-                sb.append("\n");
-            });
-            OutputStream out = exchange.getResponseBody();
-            exchange.sendResponseHeaders(200, sb.toString().getBytes().length);
-            out.write(sb.toString().getBytes());
-            out.close();
-        }
     }
 
     public void start() throws IOException {
@@ -199,14 +146,8 @@ public class HttpServer {
                     handleLogRequest(exchange, argz);
                     return;
                 }
-                if(args[2].equalsIgnoreCase("config") && exchange.getRequestMethod().equalsIgnoreCase("get")) {
+                if(args[2].equalsIgnoreCase("config")) {
                     handleConfigGetRequest(exchange, argz);
-                }
-                if(args[2].equalsIgnoreCase("config") && exchange.getRequestMethod().equalsIgnoreCase("post")) {
-                    handleConfigSetRequest(exchange, argz);
-                }
-                if(args[2].equalsIgnoreCase("render")) {
-                    handleRenderGetRequest(exchange, argz);
                 }
                 if(args[2].equalsIgnoreCase("reboot")) {
                     handleRebootRequest(exchange, argz);
